@@ -3,10 +3,22 @@ uvicorn[standard]==0.30.6
 pydantic-settings==2.5.2
 httpx==0.27.2
 
+# -- persistence --
+sqlalchemy==2.0.35
+psycopg[binary]==3.2.3
+pgvector==0.3.6
+alembic==1.13.3
+
+# -- cache --
+redis==5.1.1
+
+# -- ingestion / queue --
+confluent-kafka==2.6.0
+sentence-transformers==3.2.1
+
+# -- generation (OpenAI-compatible client, pointed at Groq by default) --
+openai==1.51.2
+
 # -- test tooling --
 pytest==8.3.3
 pytest-asyncio==0.24.0
-
-# NOTE: sqlalchemy/psycopg/pgvector, redis, pika, sentence-transformers, and
-# the LLM client land in M1 (ingestion pipeline) so this milestone stays fast
-# to install and CI stays green quickly.

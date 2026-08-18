@@ -12,8 +12,11 @@ class Settings(BaseSettings):
     environment: str = "development"
 
     database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/hybrid_rag_docs"
+    # Deliberately separate from database_url: tests truncate/rewrite data,
+    # and must never be able to touch the real ingested corpus.
+    test_database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/hybrid_rag_docs_test"
     redis_url: str = "redis://localhost:6379/0"
-    rabbitmq_url: str = "amqp://guest:guest@localhost:5672/"
+    kafka_bootstrap_servers: str = "localhost:9092"
 
     # Generation provider — OpenAI-compatible client pointed at Groq's free tier by
     # default. Swap base_url/api_key to point at real OpenAI with no code changes.

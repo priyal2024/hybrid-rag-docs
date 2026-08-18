@@ -4,6 +4,8 @@ __pycache__/
 .venv/
 *.egg-info/
 .pytest_cache/
+# fetched doc corpus — re-created by `python -m ingestion.produce`
+backend/data/
 
 # --- Node / frontend ---
 node_modules/
