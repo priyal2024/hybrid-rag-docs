@@ -60,9 +60,25 @@ Milestone-based build, tracked incrementally:
 - [x] **M2** — hybrid search API: RRF fusion over pgvector cosine search +
       Postgres full-text search, Redis-cached, full corpus (6,389 chunks)
       ingested and verified against real queries
-- [ ] **M3** — RAG generation endpoint with streamed citations
+- [x] **M3** — RAG generation: `POST /ask` streams an SSE response (sources
+      event first, then tokens, then done) from retrieved chunks through an
+      OpenAI-compatible client pointed at Groq. **Needs a free API key to
+      generate live** — see below; without one, only the no-context path is
+      exercised. Also chased down a genuinely nasty intermittent test hang
+      here — see [`tests/conftest.py`](backend/tests/conftest.py) — a
+      test-boundary race between `TRUNCATE`'s exclusive lock and a prior
+      test's still-finishing background-thread HTTP request; fixed by
+      switching to `DELETE`, confirmed clean across 5 consecutive runs.
 - [ ] **M4** — OIDC auth + chat frontend
 - [ ] **M5** — Kubernetes manifests, full CI/CD, architecture writeup
+
+### Running M3 for real (optional)
+
+`/ask` needs an LLM API key to generate answers (the no-context path works
+without one). Get a free key at [console.groq.com](https://console.groq.com),
+then set `LLM_API_KEY` in `backend/.env`. To point at real OpenAI instead,
+also change `LLM_BASE_URL` to `https://api.openai.com/v1` and `LLM_MODEL` to
+an OpenAI model name — no code changes either way.
 
 ## Local development
 

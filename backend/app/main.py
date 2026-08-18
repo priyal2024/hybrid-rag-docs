@@ -1,10 +1,11 @@
 from fastapi import FastAPI
 
 from app.config import settings
-from app.routers import search
+from app.routers import ask, search
 
 app = FastAPI(title=settings.app_name)
 app.include_router(search.router)
+app.include_router(ask.router)
 
 
 @app.get("/health")
