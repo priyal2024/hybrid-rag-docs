@@ -1,0 +1,12 @@
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+pydantic-settings==2.5.2
+httpx==0.27.2
+
+# -- test tooling --
+pytest==8.3.3
+pytest-asyncio==0.24.0
+
+# NOTE: sqlalchemy/psycopg/pgvector, redis, pika, sentence-transformers, and
+# the LLM client land in M1 (ingestion pipeline) so this milestone stays fast
+# to install and CI stays green quickly.
