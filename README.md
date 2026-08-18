@@ -69,8 +69,29 @@ Milestone-based build, tracked incrementally:
       test-boundary race between `TRUNCATE`'s exclusive lock and a prior
       test's still-finishing background-thread HTTP request; fixed by
       switching to `DELETE`, confirmed clean across 5 consecutive runs.
-- [ ] **M4** — OIDC auth + chat frontend
+- [x] **M4** — Google OIDC login (Auth.js v5) gates the whole app via
+      `src/proxy.ts` (Next.js 16 renamed `middleware.ts` → `proxy.ts` — caught
+      by reading the docs bundled in `node_modules/next/dist/docs/` before
+      writing it, per the repo's own `AGENTS.md` note); streaming chat UI
+      wired to `/ask` via a hand-rolled SSE parser (unit-tested against the
+      real edge case: an event split across two stream reads). Verified live
+      end-to-end in a real browser — question → hybrid search → 6 correct
+      sources → graceful error message when no LLM key is configured. That
+      last part started as a real bug: a raw `curl` test against `/ask`
+      showed the connection just dying mid-stream after `sources` with no
+      explanation once an LLM call failed — fixed to surface a proper error
+      token instead, with a regression test.
 - [ ] **M5** — Kubernetes manifests, full CI/CD, architecture writeup
+
+### Setting up Google sign-in (optional)
+
+The chat UI is gated behind Google OIDC login. Without credentials configured,
+`/signin` renders fine but clicking through will fail. To make it real:
+
+1. Create an OAuth client at [console.cloud.google.com/apis/credentials](https://console.cloud.google.com/apis/credentials)
+   (type: Web application; authorized redirect URI: `http://localhost:3000/api/auth/callback/google`)
+2. In `frontend/.env.local`, set `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, and
+   `AUTH_SECRET` (generate one with `npx auth secret`)
 
 ### Running M3 for real (optional)
 
@@ -130,5 +151,10 @@ Requires Node ≥ 20.9 (see `.nvmrc`):
 cd frontend
 nvm use
 npm install
+cp .env.example .env.local   # fill in AUTH_SECRET / AUTH_GOOGLE_ID / AUTH_GOOGLE_SECRET
 npm run dev
+```
+
+```bash
+npm test   # SSE-parser unit tests
 ```

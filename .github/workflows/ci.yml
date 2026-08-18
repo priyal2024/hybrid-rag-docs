@@ -51,6 +51,13 @@ jobs:
     defaults:
       run:
         working-directory: frontend
+    env:
+      # Dummy values so the build doesn't fail on missing config — no real
+      # auth flow runs during CI (build + unit tests only).
+      AUTH_SECRET: ci-only-placeholder-secret
+      AUTH_GOOGLE_ID: ci-only-placeholder
+      AUTH_GOOGLE_SECRET: ci-only-placeholder
+      NEXT_PUBLIC_API_URL: http://localhost:8000
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -60,4 +67,5 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npm run lint
+      - run: npm test -- --ci
       - run: npm run build

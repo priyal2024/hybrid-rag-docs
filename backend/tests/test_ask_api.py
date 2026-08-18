@@ -54,6 +54,46 @@ def test_ask_returns_no_context_message_when_corpus_empty(db_session):
     assert "couldn't find" in events[1][1]
 
 
+def test_ask_surfaces_generation_failure_as_a_token_instead_of_dropping_the_connection(db_session, monkeypatch):
+    """Reproduces a real bug found via manual curl testing: when the LLM call
+    raised (e.g. no/invalid API key), the stream just died mid-response with
+    no 'done' event — the client saw a bare connection reset after 'sources'."""
+    import hashlib
+
+    from app.embeddings import embed_query
+    from app.models import Chunk
+    from app.routers import ask as ask_module
+
+    content = "useEffect lets you synchronize a component with an external system."
+    db_session.add(
+        Chunk(
+            source="react",
+            file_path="src/content/test.md",
+            url="https://react.dev/reference/react/useEffect",
+            heading_path="useEffect",
+            chunk_index=0,
+            content=content,
+            content_hash=hashlib.sha256(content.encode()).hexdigest(),
+            embedding=embed_query(content),
+        )
+    )
+    db_session.commit()
+
+    def _boom(*args, **kwargs):
+        raise RuntimeError("simulated provider outage")
+        yield  # pragma: no cover — makes this a generator function
+
+    monkeypatch.setattr(ask_module, "generate_answer", _boom)
+
+    response = client.post("/ask", json={"query": "what does useEffect do?", "k": 3})
+    assert response.status_code == 200
+
+    events = _parse_sse(response.text)
+    kinds = [e for e, _ in events]
+    assert kinds == ["sources", "token", "done"], "must still reach 'done' even when generation fails"
+    assert "couldn't generate" in events[1][1]
+
+
 @pytest.mark.skipif(not settings.llm_api_key, reason="LLM_API_KEY not set — skipping live generation test")
 def test_ask_streams_generated_answer_with_sources(db_session):
     import hashlib

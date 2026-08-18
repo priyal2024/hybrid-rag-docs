@@ -12,6 +12,7 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "jest.config.js", // CJS config file — next/jest's documented pattern uses require()
   ]),
 ]);
 

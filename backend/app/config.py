@@ -2,6 +2,7 @@
 
 Kept deliberately small in M0 — grows as ingestion, search, and auth land.
 """
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -23,6 +24,14 @@ class Settings(BaseSettings):
     llm_base_url: str = "https://api.groq.com/openai/v1"
     llm_api_key: str = ""
     llm_model: str = "llama-3.1-8b-instant"
+
+    # Comma-separated in the env var; the frontend's origin(s) allowed to call this API.
+    cors_allow_origins: list[str] = ["http://localhost:3000"]
+
+    @field_validator("cors_allow_origins", mode="before")
+    @classmethod
+    def _split_origins(cls, v):
+        return [o.strip() for o in v.split(",")] if isinstance(v, str) else v
 
 
 settings = Settings()
