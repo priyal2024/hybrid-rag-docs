@@ -1,0 +1,56 @@
+databases:
+  - name: hybrid-rag-db
+    databaseName: hybrid_rag_docs
+    user: postgres
+    plan: free
+
+services:
+  - type: redis
+    name: hybrid-rag-redis
+    ipAllowList: []
+    plan: free
+
+  - type: web
+    name: hybrid-rag-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: hybrid-rag-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: hybrid-rag-redis
+          property: connectionString
+      - key: LLM_BASE_URL
+        value: https://api.groq.com/openai/v1
+      - key: LLM_API_KEY
+        sync: false
+      - key: LLM_MODEL
+        value: openai/gpt-oss-120b
+      - key: CORS_ALLOW_ORIGINS_RAW
+        value: "*"
+
+  - type: web
+    name: hybrid-rag-frontend
+    runtime: docker
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
+    plan: free
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: hybrid-rag-backend
+          property: host
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: AUTH_GOOGLE_ID
+        sync: false
+      - key: AUTH_GOOGLE_SECRET
+        sync: false
