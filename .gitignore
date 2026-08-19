@@ -6,6 +6,10 @@ __pycache__/
 .pytest_cache/
 # fetched doc corpus — re-created by `python -m ingestion.produce`
 backend/data/
+backend/.hf_cache/
+
+# real K8s secrets — copy from k8s/secret.example.yaml, never commit the real one
+k8s/secret.yaml
 
 # --- Node / frontend ---
 node_modules/

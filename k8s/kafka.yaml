@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: kafka
+  namespace: hybrid-rag-docs
+spec:
+  serviceName: kafka
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka
+  template:
+    metadata:
+      labels:
+        app: kafka
+    spec:
+      containers:
+        - name: kafka
+          image: apache/kafka:3.8.0
+          ports:
+            - containerPort: 9092
+          env:
+            - name: KAFKA_NODE_ID
+              value: "1"
+            - name: KAFKA_PROCESS_ROLES
+              value: "broker,controller"
+            - name: KAFKA_LISTENERS
+              value: "PLAINTEXT://:9092,CONTROLLER://:9093"
+            - name: KAFKA_ADVERTISED_LISTENERS
+              value: "PLAINTEXT://kafka:9092"
+            - name: KAFKA_CONTROLLER_LISTENER_NAMES
+              value: "CONTROLLER"
+            - name: KAFKA_CONTROLLER_QUORUM_VOTERS
+              value: "1@kafka-0.kafka:9093"
+            - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+              value: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT"
+            - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+              value: "1"
+          readinessProbe:
+            exec:
+              command: ["/opt/kafka/bin/kafka-broker-api-versions.sh", "--bootstrap-server", "localhost:9092"]
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 10
+          resources:
+            requests: { cpu: 200m, memory: 512Mi }
+            limits: { cpu: 1, memory: 1Gi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka
+  namespace: hybrid-rag-docs
+spec:
+  # Headless (clusterIP: None): the StatefulSet's KAFKA_CONTROLLER_QUORUM_VOTERS
+  # references kafka-0.kafka by its stable per-pod DNS name, which only a
+  # headless service tied to this StatefulSet's serviceName provides. Found
+  # this the hard way — a normal ClusterIP service left the broker unable to
+  # resolve its own controller address (UnknownHostException: kafka-0.kafka)
+  # and stuck permanently un-Ready.
+  clusterIP: None
+  # A headless service only publishes DNS for Ready endpoints by default —
+  # but Kafka needs to resolve its own kafka-0.kafka address to register
+  # with itself as controller *before* it can pass its readiness probe.
+  # Without this, single-node KRaft bootstrap deadlocks forever: not-Ready
+  # because DNS doesn't resolve, DNS doesn't resolve because not-Ready.
+  publishNotReadyAddresses: true
+  selector:
+    app: kafka
+  ports:
+    - port: 9092
+      targetPort: 9092

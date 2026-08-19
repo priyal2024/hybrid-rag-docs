@@ -2,7 +2,6 @@
 
 Kept deliberately small in M0 — grows as ingestion, search, and auth land.
 """
-from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -25,13 +24,21 @@ class Settings(BaseSettings):
     llm_api_key: str = ""
     llm_model: str = "llama-3.1-8b-instant"
 
-    # Comma-separated in the env var; the frontend's origin(s) allowed to call this API.
-    cors_allow_origins: list[str] = ["http://localhost:3000"]
+    # Comma-separated in the env var, e.g. "https://a.com,https://b.com".
+    # Deliberately typed as `str`, not `list[str]`: pydantic-settings' default
+    # behavior for list-typed fields is to JSON-decode the raw env var value
+    # *before* any field_validator gets a chance to run — which blows up on a
+    # plain string like "http://localhost:3000" (not valid JSON). Found this
+    # the hard way: it works fine with no env var set at all (the Python-list
+    # default never goes through env parsing), but crashes the moment a real
+    # deployment's ConfigMap actually sets one as a plain string. Splitting it
+    # ourselves in a property sidesteps pydantic-settings' complex-type
+    # handling entirely instead of fighting it.
+    cors_allow_origins_raw: str = "http://localhost:3000"
 
-    @field_validator("cors_allow_origins", mode="before")
-    @classmethod
-    def _split_origins(cls, v):
-        return [o.strip() for o in v.split(",")] if isinstance(v, str) else v
+    @property
+    def cors_allow_origins(self) -> list[str]:
+        return [o.strip() for o in self.cors_allow_origins_raw.split(",") if o.strip()]
 
 
 settings = Settings()

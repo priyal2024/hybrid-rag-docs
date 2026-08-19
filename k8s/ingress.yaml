@@ -1,0 +1,31 @@
+# Requires an ingress controller (e.g. ingress-nginx) installed in the
+# cluster — not present by default on kind or a fresh EKS node group. For
+# local testing without one, use `kubectl port-forward` instead (see
+# k8s/README.md).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hybrid-rag-docs
+  namespace: hybrid-rag-docs
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-buffering: "off" # keep SSE from /ask unbuffered
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: hybrid-rag-docs.local
+      http:
+        paths:
+          - path: /api-backend
+            pathType: Prefix
+            backend:
+              service:
+                name: backend
+                port:
+                  number: 8000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 3000

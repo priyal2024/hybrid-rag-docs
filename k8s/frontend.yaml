@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: hybrid-rag-docs
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: localhost/hybrid-rag-docs-frontend:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: hybrid-rag-docs-config
+            - secretRef:
+                name: hybrid-rag-docs-secrets
+          readinessProbe:
+            # "/" redirects unauthenticated requests to /signin (3xx) —
+            # kubelet treats any 2xx/3xx as a successful probe.
+            httpGet: { path: /, port: 3000 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits: { cpu: 500m, memory: 512Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: hybrid-rag-docs
+spec:
+  selector:
+    app: frontend
+  ports:
+    - port: 3000
+      targetPort: 3000

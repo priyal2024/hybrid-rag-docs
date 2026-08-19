@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+  namespace: hybrid-rag-docs
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: worker
+  template:
+    metadata:
+      labels:
+        app: worker
+    spec:
+      containers:
+        - name: worker
+          image: localhost/hybrid-rag-docs-backend:local
+          imagePullPolicy: IfNotPresent
+          command: ["python", "-m", "worker.consume"]
+          envFrom:
+            - configMapRef:
+                name: hybrid-rag-docs-config
+            - secretRef:
+                name: hybrid-rag-docs-secrets
+          resources:
+            requests: { cpu: 250m, memory: 768Mi }
+            limits: { cpu: 1, memory: 1536Mi }
