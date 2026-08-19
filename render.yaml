@@ -1,7 +1,7 @@
 databases:
   - name: hybrid-rag-db
     databaseName: hybrid_rag_docs
-    user: postgres
+    user: hybrid_rag_user
     plan: free
 
 services:
