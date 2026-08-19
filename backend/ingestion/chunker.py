@@ -184,3 +184,68 @@ def chunk_file(source: str, absolute_path: Path, repo_root: Path) -> list[Chunk]
             )
             idx += 1
     return chunks
+
+
+def chunk_text(raw_text: str, filename: str, source: str = "upload", base_url: str | None = None) -> list[Chunk]:
+    """Chunks in-memory text from user uploads or arbitrary sources."""
+    body, title = _strip_frontmatter(raw_text)
+    body = _clean_body(body)
+
+    stem = Path(filename).stem
+    top_path = title or stem
+    url = base_url or f"#upload/{filename}"
+
+    headings = list(_HEADING_RE.finditer(body))
+    sections: list[tuple[str, str]] = []
+
+    if not headings:
+        sections.append((top_path, body))
+    else:
+        first_start = headings[0].start()
+        intro = body[:first_start].strip()
+        if intro:
+            sections.append((top_path, intro))
+        current_h2: str | None = None
+        for i, h in enumerate(headings):
+            level = len(h.group(1))
+            heading_text = _clean_heading(h.group(2))
+            start = h.end()
+            end = headings[i + 1].start() if i + 1 < len(headings) else len(body)
+            section_text = body[start:end].strip()
+
+            if level == 2:
+                current_h2 = heading_text
+                heading_path = f"{top_path} > {heading_text}"
+            else:
+                heading_path = (
+                    f"{top_path} > {current_h2} > {heading_text}"
+                    if current_h2
+                    else f"{top_path} > {heading_text}"
+                )
+            sections.append((heading_path, section_text))
+
+    chunks: list[Chunk] = []
+    idx = 0
+    for heading_path, text in sections:
+        text = text.strip()
+        if not text:
+            continue
+        for part in _split_by_paragraph(text, MAX_CHUNK_CHARS):
+            if not part.strip():
+                continue
+            content = f"{heading_path}\n\n{part}"
+            content_hash = hashlib.sha256(f"{source}:{filename}:{idx}:{content}".encode()).hexdigest()
+            chunks.append(
+                Chunk(
+                    source=source,
+                    file_path=filename,
+                    url=url,
+                    heading_path=heading_path,
+                    chunk_index=idx,
+                    content=content,
+                    content_hash=content_hash,
+                )
+            )
+            idx += 1
+    return chunks
+

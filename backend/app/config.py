@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     # default. Swap base_url/api_key to point at real OpenAI with no code changes.
     llm_base_url: str = "https://api.groq.com/openai/v1"
     llm_api_key: str = ""
-    llm_model: str = "llama-3.1-8b-instant"
+    llm_model: str = "openai/gpt-oss-120b"
 
     # Comma-separated in the env var, e.g. "https://a.com,https://b.com".
     # Deliberately typed as `str`, not `list[str]`: pydantic-settings' default
