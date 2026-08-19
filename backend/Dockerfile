@@ -37,4 +37,9 @@ COPY alembic ./alembic
 COPY alembic.ini .
 
 EXPOSE 8000
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run pending Alembic migrations before the server starts accepting traffic.
+# Without this, a fresh Postgres instance (or a new migration added in a
+# later commit) has no matching schema, and the first request that touches
+# an unmigrated table fails with UndefinedTable instead of the app coming
+# up cleanly.
+CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
